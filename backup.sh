@@ -14,9 +14,9 @@ function initialize {
   read -p "Enter the path to the mount point of the backup disk: " MTPT
   read -p "Enter the path to the HOME directory on the phone: " PHONESRC
   read -p "Enter the path to your copy of adb: " ADBPATH
-  echo "$MTPT" > ~/Library/dsscripts/backup.sh/MTPT
-  echo "$PHONESRC" > ~/Library/dsscripts/backup.sh/PHONESRC
-  echo "$ADBPATH" > ~/Library/dsscripts/backup.sh/ADBPATH
+  echo $MTPT > ~/Library/dsscripts/backup.sh/MTPT
+  echo $PHONESRC > ~/Library/dsscripts/backup.sh/PHONESRC
+  echo $ADBPATH > ~/Library/dsscripts/backup.sh/ADBPATH
   return;
 }
 
@@ -32,23 +32,29 @@ if [ "$1" == "-i" ]; then
   initialize
 fi
 
-if ls -a ~/Library/dsscripts/backup.sh| grep "MTPT" && grep "PHONESRC" && grep "ADBPATH" > /dev/null; then
-  declare -p MTPT > ~/Library/dsscripts/backup.sh/MTPT
-  declare -p PHONESRC > ~/Library/dsscripts/backup.sh/PHONESRC
-  declare -p ADBPATH > ~/Library/dsscripts/backup.sh/ADBPATH
+function checkfiles {
+if [ -f ~/Library/dsscripts/backup.sh/$1 ]; then
+   return;
 else
-  initialize
+   initialize;
 fi
+}
+
+checkfiles "MTPT"
+checkfiles "PHONESRC"
+checkfiles "MTPT"
+MTPT=$(cat ~/Library/dsscripts/backup.sh/MTPT)
+PHONESRC=$(cat ~/Library/dsscripts/backup.sh/PHONESRC)
+ADBPATH=$(cat ~/Library/dsscripts/backup.sh/ADBPATH)
+
 
 TMPPATH="~/Library/dsscripts/backup.sh/TMP"
-
 if ls -al ~ | grep "$TMPPATH" > /dev/null; then
     echo "temp directory exists at $TMPPATH"
 else
     mkdir $TMPPATH
     echo "temp directory created at $TMPPATH"
 fi
-
 if mount | grep "on $MTPT" > /dev/null; then
   echo "Backup drive is mounted"
   if($ADBPATH devices); then
