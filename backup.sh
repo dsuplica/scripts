@@ -1,15 +1,26 @@
 #!/bin/bash
+if (ls -a ~/Library/dsscripts/backup.sh) && (ls -a ~/Library/dsscripts/backup.sh/TMP); then
+  echo "necessary directories exist"
+else
+  mkdir ~/Library/dsscripts/
+  mkdir ~/Library/dsscripts/backup.sh/
+  mkdir ~/Library/dsscripts/backup.sh/TMP
+  echo "Necessary directories created"
+fi
+
+DIR="~/Library/dsscripts/backup.sh"
+
 function initialize {
-  read -p "Enter the path to the mount point of the backup disk: " LOCALMOUNTPOINT
-  read -p "Enter the path to a temp directory to be used. It should not be shared with anything else: " TMPDIRPATH
+  echo "Type in necessary paths. Paths should be from the root"
+  read -p "Enter the path to the mount point of the backup disk: " MTPT
   read -p "Enter the path to the HOME directory on the phone: " PHONESRC
   read -p "Enter the path to your copy of adb: " ADBPATH
-  echo $LOCALMOUNTPOINT > ./.backup.sh.vars.LOCALMOUNTPOINT
-  echo $TMPDIRPATH > ./.backup.sh.vars.TMPDIRPATH
-  echo $PHONESRC > ./.backup.sh.vars.PHONESRC
-  echo $ADBPATH > ./.backup.sh.vars.ADBPATH
+  echo $MTPT > $DIR/MTPT.var
+  echo $PHONESRC > $DIR/PHONESRC.var
+  echo $ADBPATH > $DIR/ADBPATH.var
   return;
 }
+
 if [ "$1" == "-h" ]; then
   echo "Usage: ./backup.sh [- h,i]"
   echo "This program takes no inputs"
@@ -19,25 +30,27 @@ if [ "$1" == "-h" ]; then
 fi
 
 if [ "$1" == "-i" ]; then
-  echo "Type in necessary paths. Paths should be from the root"
   initialize
 fi
 
-if ls -a | grep "backup.sh.vars" > /dev/null; then
-    declare -p LOCALMOUNTPOINT TMPDIRPATH PHONESRC > ./backup.sh.vars
+if ls -a $DIR| grep "MTPT.var" && grep "PHONESRC.var" && grep "ADBPATH.var" > /dev/null; then
+  declare -p MTPT > $DIR/MTPT.var
+  declare -p PHONESRC > $DIR/PHONESRC.var
+  declare -p ADBPATH > $DIR/ADBPATH.var
 else
   initialize
 fi
 
+TMPPATH="$DIR/TMP"
 
-if ls -al ~ | grep "$TMPDIRPATH" > /dev/null; then
-    echo "temp directory exists at $TMPDIRPATH"
+if ls -al ~ | grep "$TMPPATH" > /dev/null; then
+    echo "temp directory exists at $TMPPATH"
 else
-    mkdir $TMPDIRPATH
-    echo "temp directory created at $TMPDIRPATH"
+    mkdir $TMPPATH
+    echo "temp directory created at $TMPPATH"
 fi
 
-if mount | grep "on $LOCALMOUNTPOINT" > /dev/null; then
+if mount | grep "on $MTPT" > /dev/null; then
   echo "Backup drive is mounted"
   if($ADBPATH devices); then
     echo "Phone is connected"
@@ -45,19 +58,23 @@ if mount | grep "on $LOCALMOUNTPOINT" > /dev/null; then
     echo "Please plug in phone and ensure adb is enabled"
     exit;
   fi
+
   echo "Beginning to copy files, this will take a while"
-  $ADBPATH pull $PHONESRC $TMPDIRPATH
+  echo "Please enter your password"
+  sudo $ADBPATH pull $PHONESRC $TMPPATH
   echo "Files copied, now creating and transfering to disk image. The adb error is normal."
   echo "It is now safe to unplug the phone"
   TODAY=`date '+%Y-%m-%d'`;
-  for D in `find $TMPDIRPATH -type d`
+
+  for D in `find $TMPPATH -type d`
   do
-    hdiutil create -encryption -stdinpass -srcfolder $TMPDIRPATH/$D $TMPDIRPATH/$TODAY.dmg
+    hdiutil create -encryption -stdinpass -srcfolder $TMPPATH/$D $TMPPATH/$TODAY.dmg
     echo "Disk image created"
     echo "Deleting temporary folder"
-    rm -rf $TMPDIRPATH/$D
+    rm -rf $TMPPATH/$D
   done
-  sudo mv $TMPDIRPATH/$TODAY.dmg $LOCALMOUNTPOINT
+
+  sudo mv $TMPPATH/$TODAY.dmg $MTPT
   echo "Backup finished. It is now safe to eject the backup drive"
 else
   echo "Please insert the backup drive"
