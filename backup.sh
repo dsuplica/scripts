@@ -8,16 +8,15 @@ else
   echo "Necessary directories created"
 fi
 
-DIR="~/Library/dsscripts/backup.sh"
 
 function initialize {
   echo "Type in necessary paths. Paths should be from the root"
   read -p "Enter the path to the mount point of the backup disk: " MTPT
   read -p "Enter the path to the HOME directory on the phone: " PHONESRC
   read -p "Enter the path to your copy of adb: " ADBPATH
-  echo $MTPT > $DIR/MTPT.var
-  echo $PHONESRC > $DIR/PHONESRC.var
-  echo $ADBPATH > $DIR/ADBPATH.var
+  echo "$MTPT" > ~/Library/dsscripts/backup.sh/MTPT
+  echo "$PHONESRC" > ~/Library/dsscripts/backup.sh/PHONESRC
+  echo "$ADBPATH" > ~/Library/dsscripts/backup.sh/ADBPATH
   return;
 }
 
@@ -33,15 +32,15 @@ if [ "$1" == "-i" ]; then
   initialize
 fi
 
-if ls -a $DIR| grep "MTPT.var" && grep "PHONESRC.var" && grep "ADBPATH.var" > /dev/null; then
-  declare -p MTPT > $DIR/MTPT.var
-  declare -p PHONESRC > $DIR/PHONESRC.var
-  declare -p ADBPATH > $DIR/ADBPATH.var
+if ls -a ~/Library/dsscripts/backup.sh| grep "MTPT" && grep "PHONESRC" && grep "ADBPATH" > /dev/null; then
+  declare -p MTPT > ~/Library/dsscripts/backup.sh/MTPT
+  declare -p PHONESRC > ~/Library/dsscripts/backup.sh/PHONESRC
+  declare -p ADBPATH > ~/Library/dsscripts/backup.sh/ADBPATH
 else
   initialize
 fi
 
-TMPPATH="$DIR/TMP"
+TMPPATH="~/Library/dsscripts/backup.sh/TMP"
 
 if ls -al ~ | grep "$TMPPATH" > /dev/null; then
     echo "temp directory exists at $TMPPATH"
@@ -60,7 +59,7 @@ if mount | grep "on $MTPT" > /dev/null; then
   fi
 
   echo "Beginning to copy files, this will take a while"
-  echo "Please enter your password"
+  sudo /Users/dariussuplica/android/adb pull /storage/emulated/0 ~/Library/dsscripts/backup.sh/TMP
   sudo $ADBPATH pull $PHONESRC $TMPPATH
   echo "Files copied, now creating and transfering to disk image. The adb error is normal."
   echo "It is now safe to unplug the phone"
