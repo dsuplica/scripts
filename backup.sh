@@ -15,7 +15,6 @@ if [ "$1" == "-h" ]; then
   echo "This program takes no inputs"
   echo " -h: displays this text"
   echo " -i: sets variables even if the already exist"
-  echo "**THIS SCRIPT SHOULD BE RUN WITH ROOT PRIVILEGES**"
   exit;
 fi
 
@@ -40,6 +39,12 @@ fi
 
 if mount | grep "on $LOCALMOUNTPOINT" > /dev/null; then
   echo "Backup drive is mounted"
+  if($ADBPATH devices); then
+    echo "Phone is connected"
+  else
+    echo "Please plug in phone and ensure adb is enabled"
+    exit;
+  fi
   echo "Beginning to copy files, this will take a while"
   $ADBPATH pull $PHONESRC $TMPDIRPATH
   echo "Files copied, now creating and transfering to disk image. The adb error is normal."
