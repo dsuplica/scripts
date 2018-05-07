@@ -65,21 +65,33 @@ if mount | grep "on $MTPT" > /dev/null; then
   fi
 
   echo "Beginning to copy files, this will take a while"
-  sudo /Users/dariussuplica/android/adb pull /storage/emulated/0 ~/Library/dsscripts/backup.sh/TMP
-  sudo $ADBPATH pull $PHONESRC $TMPPATH
+#  sudo /Users/dariussuplica/android/adb pull /storage/emulated/0 ~/Library/dsscripts/backup.sh/TMP
+#  sudo $ADBPATH pull $PHONESRC $TMPPATH
   echo "Files copied, now creating and transfering to disk image. The adb error is normal."
   echo "It is now safe to unplug the phone"
   TODAY=`date '+%Y-%m-%d'`;
-
-  for D in `find $TMPPATH -type d`
-  do
-    hdiutil create -encryption -stdinpass -srcfolder $TMPPATH/$D $TMPPATH/$TODAY.dmg
-    echo "Disk image created"
-    echo "Deleting temporary folder"
-    rm -rf $TMPPATH/$D
-  done
-
-  sudo mv $TMPPATH/$TODAY.dmg $MTPT
+  #TODO - work with folders not named "0"
+  SRC="$TMPPATH/0"
+  DESTINATION="$TMPPATH/$TODAY.dmg"
+  echo "Source is $SRC"
+  echo "Destination is $DESTINATION"
+#  hdiutil create -encryption -stdinpass -srcfolder ~/Library/dsscripts/backup.sh/TMP/0 ~/Library/dsscripts/backup.sh/TMP/2018-05-06.dmg
+  sudo touch $DESTINATION
+  echo "hdiutil create -encryption -stdinpass -srcfolder $SRC $DESTINATION"
+  CMD="hdiutil create -encryption -stdinpass -srcfolder $SRC $DESTINATION"
+  sudo $CMD
+#  sudo hdiutil create -encryption -stdinpass -srcfolder $SRC $DESTINATION
+  echo "Disk image created"
+  echo "Deleting temporary folder"
+  FOLDER="$TMPPATH/0"
+#  sudo rm -rf $FOLDER
+  SRC="$TMPPATH/$TODAY.dmg"
+  DESTINATION="$MTPT/$TODAY.dmg"
+  sudo touch $DESTINATION
+  echo "mv $SRC $DESTINATION"
+  CMD="mv $SRC $DESTINATION"
+  sudo $CMD
+#  sudo mv $SRC $DESTINATION
   echo "Backup finished. It is now safe to eject the backup drive"
 else
   echo "Please insert the backup drive"
