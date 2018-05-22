@@ -43,9 +43,9 @@ fi
 checkfiles "MTPT"
 checkfiles "PHONESRC"
 checkfiles "MTPT"
-MTPT="~/.dsscripts/backup.sh/MTPT"
-PHONESRC="~/.dsscripts/backup.sh/PHONESRC"
-ADBPATH="~/.dsscripts/backup.sh/ADBPATH"
+MTPT=$(cat ~/.dsscripts/backup.sh/MTPT)
+PHONESRC=$(cat ~/.dsscripts/backup.sh/PHONESRC)
+ADBPATH=$(cat ~/.dsscripts/backup.sh/ADBPATH)
 
 
 #TMPPATH="~/.dsscripts/backup.sh/TMP"
