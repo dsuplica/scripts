@@ -43,13 +43,13 @@ fi
 checkfiles "MTPT"
 checkfiles "PHONESRC"
 checkfiles "MTPT"
-MTPT=$(cat ~/.dsscripts/backup.sh/MTPT)
-PHONESRC=$(cat ~/.dsscripts/backup.sh/PHONESRC)
-ADBPATH=$(cat ~/.dsscripts/backup.sh/ADBPATH)
+MTPT="~/.dsscripts/backup.sh/MTPT"
+PHONESRC="~/.dsscripts/backup.sh/PHONESRC"
+ADBPATH="~/.dsscripts/backup.sh/ADBPATH"
 
 
 #TMPPATH="~/.dsscripts/backup.sh/TMP"
-if ls -al ~ | grep "~/.dsscripts/backup.sh/TMP" > /dev/null; then
+if (ls -a ~/.dsscripts/backup.sh/TMP); then
     echo "temp directory exists at ~/.dsscripts/backup.sh/TMP"
 else
     mkdir ~/.dsscripts/backup.sh/TMP
