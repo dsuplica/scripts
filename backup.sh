@@ -47,7 +47,8 @@ MTPT=$(cat ~/.dsscripts/backup.sh/MTPT)
 PHONESRC=$(cat ~/.dsscripts/backup.sh/PHONESRC)
 ADBPATH=$(cat ~/.dsscripts/backup.sh/ADBPATH)
 
-
+#   FOR DEBUG PURPOSES ONLY
+PHONESRC
 #TMPPATH="~/.dsscripts/backup.sh/TMP"
 if (ls -a ~/.dsscripts/backup.sh/TMP); then
     echo "temp directory exists at ~/.dsscripts/backup.sh/TMP"
@@ -64,9 +65,11 @@ if mount | grep "on $MTPT" > /dev/null; then
     exit;
   fi
 
+  echo "clearing tmp"
+  sudo rm -rf ~/.dsscripts/backup.sh/TMP/*
   echo "Beginning to copy files, this will take a while"
 #  sudo /Users/dariussuplica/android/adb pull /storage/emulated/0 ~/.dsscripts/backup.sh/TMP
-   $ADBPATH pull $PHONESRC ~/.dsscripts/backup.sh/TMP
+   sudo $ADBPATH pull $PHONESRC ~/.dsscripts/backup.sh/TMP
   echo "Files copied, now creating and transfering to disk image."
   echo "It is now safe to unplug the phone"
   TODAY=`date '+%Y-%m-%d'`;
@@ -78,20 +81,16 @@ if mount | grep "on $MTPT" > /dev/null; then
 #  hdiutil create -encryption -stdinpass -srcfolder ~/.dsscripts/backup.sh/TMP/0 ~/.dsscripts/backup.sh/TMP/2018-05-06.dmg
   sudo touch $DESTINATION
   echo "hdiutil create -encryption -stdinpass -srcfolder $SRC $DESTINATION"
-  CMD="hdiutil create -encryption -stdinpass -srcfolder $SRC $DESTINATION"
-  sudo $CMD
-#  sudo hdiutil create -encryption -stdinpass -srcfolder $SRC $DESTINATION
-  echo "Disk image created"
-  echo "Deleting temporary folder"
-  FOLDER="~/.dsscripts/backup.sh/TMP/0"
-#  sudo rm -rf $FOLDER
+#  CMD="hdiutil create -encryption -stdinpass -srcfolder $SRC $DESTINATION"
+#  sudo $CMD
+  sudo hdiutil create -encryption -stdinpass -srcfolder ~/.dsscripts/backup.sh/TMP/0 ~/.dsscripts/backup.sh/TMP/$TODAY.dmg
   SRC="~/.dsscripts/backup.sh/TMP/$TODAY.dmg"
   DESTINATION="$MTPT/$TODAY.dmg"
   sudo touch $DESTINATION
 #DEB  echo "mv $SRC $DESTINATION"
 #DEB  CMD="mv $SRC $DESTINATION"
 #DEB  sudo $CMD
-  sudo mv $SRC $DESTINATION
+  sudo mv ~/.dsscripts/backup.sh/TMP/$TODAY.dmg $MTPT/$TODAY.dmg
   echo "Backup finished. It is now safe to eject the backup drive"
 else
   echo "Please insert the backup drive"
