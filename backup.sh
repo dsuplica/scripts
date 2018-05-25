@@ -11,9 +11,9 @@ fi
 
 
 function initialize {
-  if [ "$1" == "mtpt" ]; then
-    read -p "Enter the path to the mount point of the backup disk: " MTPT
-    echo $MTPT > ~/.dsscripts/backup.sh/MTPT
+  if [ "$1" == "bkpt" ]; then
+    read -p "Enter the path to disk or directory to back up to: " BKPT
+    echo $BKPT > ~/.dsscripts/backup.sh/BKPT
   elif [ "$1" == "phonesrc" ]; then
     read -p "Enter the path to the HOME directory on the phone: " PHONESRC
     echo $PHONESRC > ~/.dsscripts/backup.sh/PHONESRC
@@ -34,7 +34,7 @@ function help {
   echo "Usage: backup.sh [- h,s] [options]"
   echo " -h, --help: displays this text"
   echo " -s: sets variables even if the already exist"
-  echo "with -s, type mtpt to set the drive mount point, phonesrc to set the directory on the phone to back up from, and adbpath to set the path to your copy of adb"
+  echo "with -s, type bkpt to set the directory to back up to, phonesrc to set the directory on the phone to back up from, and adbpath to set the path to your copy of adb"
   echo "or with no arguments to set all 3"
   exit;
 }
@@ -49,7 +49,7 @@ if [ "$1" == "-s" ]; then
     initialize "$2"
   else
     CONT="1"
-    initialize mtpt
+    initialize bkpt
     initialize phonesrc
     unset CONT
     initialize adbpath
@@ -64,10 +64,10 @@ else
 fi
 }
 
-checkfiles "MTPT"
+checkfiles "BKPT"
 checkfiles "PHONESRC"
 checkfiles "ADBPATH"
-MTPT=$(cat ~/.dsscripts/backup.sh/MTPT)
+BKPT=$(cat ~/.dsscripts/backup.sh/BKPT)
 PHONESRC=$(cat ~/.dsscripts/backup.sh/PHONESRC)
 ADBPATH=$(cat ~/.dsscripts/backup.sh/ADBPATH)
 
@@ -78,8 +78,8 @@ else
     mkdir ~/.dsscripts/backup.sh/TMP
     echo "temp directory created at ~/.dsscripts/backup.sh/TMP"
 fi
-if mount | grep "on $MTPT" > /dev/null; then
-  echo "Backup drive is mounted"
+if (ls $bkpt); then
+  echo "Backup point exists"
   if ($ADBPATH devices); then
     echo "Phone is connected" > /dev/null
   else
@@ -107,13 +107,10 @@ if mount | grep "on $MTPT" > /dev/null; then
 #  sudo $CMD
   sudo hdiutil create -encryption -stdinpass -srcfolder ~/.dsscripts/backup.sh/TMP/0 ~/.dsscripts/backup.sh/TMP/$TODAY.dmg
   SRC="~/.dsscripts/backup.sh/TMP/$TODAY.dmg"
-  DESTINATION="$MTPT/$TODAY.dmg"
+  DESTINATION="$BKPT/$TODAY.dmg"
   sudo touch $DESTINATION
-#DEB  echo "mv $SRC $DESTINATION"
-#DEB  CMD="mv $SRC $DESTINATION"
-#DEB  sudo $CMD
-  sudo mv ~/.dsscripts/backup.sh/TMP/$TODAY.dmg $MTPT/$TODAY.dmg
-  echo "Backup finished. It is now safe to eject the backup drive"
+  sudo mv ~/.dsscripts/backup.sh/TMP/$TODAY.dmg $BKPT/$TODAY.dmg
+  echo "Backup finished."
 else
   echo "Please insert the backup drive"
 fi
