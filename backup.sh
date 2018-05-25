@@ -1,4 +1,5 @@
 #!/bin/bash
+#TODO: no longer require a mounted drive, work with folder instead
 if (ls -a ~/.dsscripts/backup.sh) && (ls -a ~/.dsscripts/backup.sh/TMP); then
   echo "necessary directories exist"
 else
@@ -10,26 +11,49 @@ fi
 
 
 function initialize {
-  echo "Type in necessary paths. Paths should be from the root"
-  read -p "Enter the path to the mount point of the backup disk: " MTPT
-  read -p "Enter the path to the HOME directory on the phone: " PHONESRC
-  read -p "Enter the path to your copy of adb: " ADBPATH
-  echo $MTPT > ~/.dsscripts/backup.sh/MTPT
-  echo $PHONESRC > ~/.dsscripts/backup.sh/PHONESRC
-  echo $ADBPATH > ~/.dsscripts/backup.sh/ADBPATH
-  return;
+  if [ "$1" == "mtpt" ]; then
+    read -p "Enter the path to the mount point of the backup disk: " MTPT
+    echo $MTPT > ~/.dsscripts/backup.sh/MTPT
+  elif [ "$1" == "phonesrc" ]; then
+    read -p "Enter the path to the HOME directory on the phone: " PHONESRC
+    echo $PHONESRC > ~/.dsscripts/backup.sh/PHONESRC
+  elif [ "$1" == "adbpath" ]; then
+    read -p "Enter the path to your copy of adb: " ADBPATH
+    echo $ADBPATH > ~/.dsscripts/backup.sh/ADBPATH
+  else
+    echo "option not recognized. Run with the option -h or --help to see "
+  fi
+  if [ $CONT ]; then
+    return;
+  else
+    exit;
+  fi
 }
 
-if [ "$1" == "-h" ]; then
-  echo "Usage: ./backup.sh [- h,i]"
-  echo "This program takes no inputs"
-  echo " -h: displays this text"
-  echo " -i: sets variables even if the already exist"
+function help {
+  echo "Usage: backup.sh [- h,s] [options]"
+  echo " -h, --help: displays this text"
+  echo " -s: sets variables even if the already exist"
+  echo "with -s, type mtpt to set the drive mount point, phonesrc to set the directory on the phone to back up from, and adbpath to set the path to your copy of adb"
+  echo "or with no arguments to set all 3"
   exit;
+}
+if [ "$1" == "-h" ]; then
+  help;
+elif [ "$1" == "--help" ]; then
+  help;
 fi
 
-if [ "$1" == "-i" ]; then
-  initialize
+if [ "$1" == "-s" ]; then
+  if [$2 > /dev/null ]; then
+    initialize "$2"
+  else
+    CONT="1"
+    initialize mtpt
+    initialize phonesrc
+    unset CONT
+    initialize adbpath
+  fi
 fi
 
 function checkfiles {
@@ -42,14 +66,12 @@ fi
 
 checkfiles "MTPT"
 checkfiles "PHONESRC"
-checkfiles "MTPT"
+checkfiles "ADBPATH"
 MTPT=$(cat ~/.dsscripts/backup.sh/MTPT)
 PHONESRC=$(cat ~/.dsscripts/backup.sh/PHONESRC)
 ADBPATH=$(cat ~/.dsscripts/backup.sh/ADBPATH)
 
-#   FOR DEBUG PURPOSES ONLY
-PHONESRC
-#TMPPATH="~/.dsscripts/backup.sh/TMP"
+
 if (ls -a ~/.dsscripts/backup.sh/TMP); then
     echo "temp directory exists at ~/.dsscripts/backup.sh/TMP"
 else
@@ -58,7 +80,7 @@ else
 fi
 if mount | grep "on $MTPT" > /dev/null; then
   echo "Backup drive is mounted"
-  if($ADBPATH devices); then
+  if ($ADBPATH devices); then
     echo "Phone is connected" > /dev/null
   else
     echo "Please plug in phone and ensure adb is enabled"
