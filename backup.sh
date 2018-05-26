@@ -1,98 +1,100 @@
 #!/bin/bash
-if (ls -a ~/.dsscripts/backup.sh) && (ls -a ~/.dsscripts/backup.sh/TMP); then
-  echo "necessary directories exist"
-else
+#TODO: no longer require a mounted drive, work with folder instead
+if [[ $EUID -ne 0 ]]; then
+   echo "Please run this script with sudo" 1>&2
+   exit;
+fi
+if (! ls -a ~/.dsscripts/backup.sh > /dev/null) && (! ls -a ~/.dsscripts/backup.sh/TMP > /dev/null); then
   mkdir ~/.dsscripts/
   mkdir ~/.dsscripts/backup.sh/
   mkdir ~/.dsscripts/backup.sh/TMP
-  echo "Necessary directories created"
 fi
 
 
 function initialize {
-  echo "Type in necessary paths. Paths should be from the root"
-  read -p "Enter the path to the mount point of the backup disk: " MTPT
-  read -p "Enter the path to the HOME directory on the phone: " PHONESRC
-  read -p "Enter the path to your copy of adb: " ADBPATH
-  echo $MTPT > ~/.dsscripts/backup.sh/MTPT
-  echo $PHONESRC > ~/.dsscripts/backup.sh/PHONESRC
-  echo $ADBPATH > ~/.dsscripts/backup.sh/ADBPATH
-  return;
+  if [ "$1" == "bkpt" ]; then
+    read -p "Enter the path to disk or directory to back up to: " bkpt
+    echo $bkpt > ~/.dsscripts/backup.sh/bkpt
+  elif [ "$1" == "phonesrc" ]; then
+    read -p "Enter the path to the HOME directory on the phone: " phonesrc
+    echo $phonesrc > ~/.dsscripts/backup.sh/phonesrc
+  elif [ "$1" == "adbpath" ]; then
+    read -p "Enter the path to your copy of adb: " adbpath
+    echo $adbpath > ~/.dsscripts/backup.sh/adbpath
+  else
+    echo "option not recognized. Run with the option -h or --help to see "
+  fi
+  if [ $CONT ]; then
+    return;
+  else
+    exit;
+  fi
 }
 
-if [ "$1" == "-h" ]; then
-  echo "Usage: ./backup.sh [- h,i]"
-  echo "This program takes no inputs"
-  echo " -h: displays this text"
-  echo " -i: sets variables even if the already exist"
+function help {
+  echo "This script should be run using sudo"
+  echo "Usage: backup.sh [- h,s] [options]"
+  echo " -h, --help: displays this text"
+  echo " -s: sets variables even if the already exist"
+  echo "with -s, type bkpt to set the directory to back up to, phonesrc to set the directory on the phone to back up from, and adbpath to set the path to your copy of adb"
+  echo "or with no arguments to set all 3"
   exit;
+}
+if [ "$1" == "-h" ]; then
+  help;
+elif [ "$1" == "--help" ]; then
+  help;
 fi
 
-if [ "$1" == "-i" ]; then
-  initialize
+if [ "$1" == "-s" ]; then
+  if ["$2" > /dev/null ]; then
+    initialize "$2"
+  else
+    CONT="1"
+    initialize bkpt
+    initialize phonesrc
+    unset CONT
+    initialize adbpath
+  fi
 fi
 
 function checkfiles {
 if [ -f ~/.dsscripts/backup.sh/$1 ]; then
    return;
 else
-   initialize;
+   initialize $1;
 fi
 }
+CONT="1"
+checkfiles "bkpt"
+checkfiles "phonesrc"
+unset CONT
+checkfiles "adbpath"
+bkpt=$(cat ~/.dsscripts/backup.sh/bkpt)
+phonesrc=$(cat ~/.dsscripts/backup.sh/phonesrc)
+adbpath=$(cat ~/.dsscripts/backup.sh/adbpath)
 
-checkfiles "MTPT"
-checkfiles "PHONESRC"
-checkfiles "MTPT"
-MTPT=$(cat ~/.dsscripts/backup.sh/MTPT)
-PHONESRC=$(cat ~/.dsscripts/backup.sh/PHONESRC)
-ADBPATH=$(cat ~/.dsscripts/backup.sh/ADBPATH)
 
-#   FOR DEBUG PURPOSES ONLY
-PHONESRC
-#TMPPATH="~/.dsscripts/backup.sh/TMP"
-if (ls -a ~/.dsscripts/backup.sh/TMP); then
-    echo "temp directory exists at ~/.dsscripts/backup.sh/TMP"
-else
+if (! ls -a ~/.dsscripts/backup.sh/TMP > /dev/null); then
     mkdir ~/.dsscripts/backup.sh/TMP
-    echo "temp directory created at ~/.dsscripts/backup.sh/TMP"
 fi
-if mount | grep "on $MTPT" > /dev/null; then
-  echo "Backup drive is mounted"
-  if($ADBPATH devices); then
-    echo "Phone is connected" > /dev/null
-  else
-    echo "Please plug in phone and ensure adb is enabled"
+if (ls $bkpt > /dev/null); then
+  if (! $adbpath devices > /dev/null); then
+    echo "Please plug in ONE phone and ensure adb is enabled"
     exit;
   fi
-
-  echo "clearing tmp"
   sudo rm -rf ~/.dsscripts/backup.sh/TMP/*
   echo "Beginning to copy files, this will take a while"
-#  sudo /Users/dariussuplica/android/adb pull /storage/emulated/0 ~/.dsscripts/backup.sh/TMP
-   sudo $ADBPATH pull $PHONESRC ~/.dsscripts/backup.sh/TMP
-  echo "Files copied, now creating and transfering to disk image."
-  echo "It is now safe to unplug the phone"
+  sudo $adbpath pull $phonesrc ~/.dsscripts/backup.sh/TMP
+  echo "Files copied, it is now safe to unplug the phone."
   TODAY=`date '+%Y-%m-%d'`;
-  #TODO - work with folders not named "0"
-  SRC="~/.dsscripts/backup.sh/TMP/0"
-  DESTINATION="~/.dsscripts/backup.sh/TMP/$TODAY.dmg"
-  echo "Source is $SRC"
-  echo "Destination is $DESTINATION"
-#  hdiutil create -encryption -stdinpass -srcfolder ~/.dsscripts/backup.sh/TMP/0 ~/.dsscripts/backup.sh/TMP/2018-05-06.dmg
-  sudo touch $DESTINATION
-  echo "hdiutil create -encryption -stdinpass -srcfolder $SRC $DESTINATION"
-#  CMD="hdiutil create -encryption -stdinpass -srcfolder $SRC $DESTINATION"
-#  sudo $CMD
-  sudo hdiutil create -encryption -stdinpass -srcfolder ~/.dsscripts/backup.sh/TMP/0 ~/.dsscripts/backup.sh/TMP/$TODAY.dmg
+  sudo hdiutil create -encryption -stdinpass -srcfolder ~/.dsscripts/backup.sh/TMP/* ~/.dsscripts/backup.sh/TMP/$TODAY.dmg
   SRC="~/.dsscripts/backup.sh/TMP/$TODAY.dmg"
-  DESTINATION="$MTPT/$TODAY.dmg"
+  DESTINATION="$bkpt/$TODAY.dmg"
   sudo touch $DESTINATION
-#DEB  echo "mv $SRC $DESTINATION"
-#DEB  CMD="mv $SRC $DESTINATION"
-#DEB  sudo $CMD
-  sudo mv ~/.dsscripts/backup.sh/TMP/$TODAY.dmg $MTPT/$TODAY.dmg
-  echo "Backup finished. It is now safe to eject the backup drive"
+  sudo mv ~/.dsscripts/backup.sh/TMP/$TODAY.dmg $bkpt/$TODAY.dmg
+  echo "Backup finished."
 else
-  echo "Please insert the backup drive"
+  echo "Please ensure the backup folder exists. If you are backing up to a drive, ensure it is mounted."
 fi
 exit;
