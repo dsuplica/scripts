@@ -20,7 +20,7 @@ function initializevars {
   elif [ "$1" == "SDKPATH" ]; then
     read -p "Enter the path to your copy of the sdk. It should include both adb and fastboot: " SDKPATH
     echo $SDKPATH > ~/.dsscripts/backup.sh/SDKPATH
-  elif [ "$1" == "twrp" ]; then
+  elif [ "$1" == "TWRPPATH" ]; then
     read -p "Enter the path to your copy of TWRP: " TWRPPATH
     echo $TWRPPATH > ~/.dsscripts/backup.sh/TWRPPATH
   else
@@ -29,12 +29,10 @@ function initializevars {
   if [ $CONT ]; then
     return;
   else
+    exit;
   fi
 }
 
-function help {
-
-}
 
 if [ "$1" == "-h" ] || [ "$1" == "--help" ]; then
   echo "This script should be run using sudo"
@@ -49,8 +47,8 @@ if [ "$1" == "-h" ] || [ "$1" == "--help" ]; then
 fi
 
 
-if [ "$1" == "-s" ] || [ "$1" == "--set"]; then
-  if ["$2" > /dev/null ]; then
+if [ "$1" == "-s" ] || [ "$1" == "--set" ]; then
+  if [ "$2" > /dev/null ]; then
     unset CONT
     initializevars "$2"
   else
@@ -64,7 +62,7 @@ if [ "$1" == "-s" ] || [ "$1" == "--set"]; then
   exit;
 fi
 
-if [ "$1" == "-d" ] || [ "$1" == "--delaydmg"]; then
+if [ "$1" == "-d" ] || [ "$1" == "--delaydmg" ]; then
   if ["$2" == "m"]; then
     DELAY=$((60*$3))
   elif ["$2" == "h"]; then
@@ -82,8 +80,12 @@ if [ -f ~/.dsscripts/backup.sh/$1 ]; then
    return;
 else
    initializevars $1;
-    if [! $CONT ]; then
-fi
+    if [ $CONT ]; then
+      return
+    else
+      exit
+    fi
+  fi
 }
 CONT="1"
 checkfiles "BKPT"
@@ -109,23 +111,28 @@ function checkplugged {
     return
   fi
 }
-
-function getdmgpassphrase {
-  read -s -p "Enter disk image passphrase" DMGPASSPHRASE1
-  read -s -p "Enter again" DMGPASSPHRASE2
-  if [ $DMGPASSPHRASE1 == $DMGPASSPHRASE2 ]; then
-    DMGPASSPHRASE=$DMGPASSPHRASE1
-    return
-  else
-    echo "Passphrases do not match"
-    getdmgpassphrase
-  fi
+unset CONT
+function getpasswd {
+  while [[ ! $CONT ]]; do
+    read -sp "Enter disk image passphrase: " DMGPASSPHRASE1
+    echo " "
+    read -sp "Enter again: " DMGPASSPHRASE2
+    if [ $DMGPASSPHRASE1 == $DMGPASSPHRASE2 ]; then
+      DMGPASSPHRASE=$DMGPASSPHRASE1
+      CONT="1"
+    fi
+  done
 }
+
+#DEBUG
+NOTWRP="0"
+DELAY="0"
+#/DEBUG
 if (! ls -a ~/.dsscripts/backup.sh/TMP > /dev/null); then
     mkdir ~/.dsscripts/backup.sh/TMP
 fi
 if (ls $BKPT > /dev/null); then
-  if [! $NOTWRP ]; then
+  if [ ! $NOTWRP ]; then
     if (! $SDKPATH/fastboot devices > /dev/null); then
       echo "Please plug in ONE phone booted to the bootloader (The bootloader should be unlocked)"
       exit;
@@ -136,8 +143,9 @@ if (ls $BKPT > /dev/null); then
   fi
   checkplugged
   #!!!:  THIS MIGHT BE A HUGE VULNERABILITY
-  getdmgpassphrase
+  getpasswd
   sudo rm -rf ~/.dsscripts/backup.sh/TMP/*
+  echo " "
   echo "Beginning to copy files, this will take a while"
   sudo $SDKPATH/adb pull $PHONESRC ~/.dsscripts/backup.sh/TMP
   echo "Files copied, it is now safe to unplug the phone."
