@@ -117,7 +117,7 @@ function getpasswd {
     read -sp "Enter disk image passphrase: " DMGPASSPHRASE1
     echo " "
     read -sp "Enter again: " DMGPASSPHRASE2
-    if [ $DMGPASSPHRASE1 == $DMGPASSPHRASE2 ]; then
+    if [ $DMGPASSPHRASE1 = $DMGPASSPHRASE2 ]; then
       DMGPASSPHRASE=$DMGPASSPHRASE1
       CONT="1"
     fi
