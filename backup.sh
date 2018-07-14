@@ -72,7 +72,7 @@ if [ "$1" == "-d" ] || [ "$1" == "--delaydmg" ]; then
   elif [$2 -gt 0]; then
     DELAY=$2
   else
-    echo "Invalid input to delay time"
+    echo "Invalid input"
     exit;
   fi
 fi
@@ -103,7 +103,7 @@ PHONESRC=$(cat ~/.dsscripts/backup.sh/PHONESRC)
 TWRPPATH=$(cat ~/.dsscripts/backup.sh/TWRPPATH)
 SDKPATH=$(cat ~/.dsscripts/backup.sh/SDKPATH)
 
-#Stops the script until the user prompts to continue
+#Stops the script until the user prompts to continue, unless auto mode is enabled
 function pause {
   read -p "Press enter to continue"
 }
@@ -117,19 +117,6 @@ function checkplugged {
   else
     return
   fi
-}
-# gets passphrase to use for the dmg later and verifies it
-unset CONT
-function getpasswd {
-  while [[ ! $CONT ]]; do
-    read -sp "Enter disk image passphrase: " DMGPASSPHRASE1
-    echo " "
-    read -sp "Enter again: " DMGPASSPHRASE2
-    if [ $DMGPASSPHRASE1 = $DMGPASSPHRASE2 ]; then
-      DMGPASSPHRASE=$DMGPASSPHRASE1
-      CONT="1"
-    fi
-  done
 }
 
 #DEBUG
@@ -147,8 +134,6 @@ if (ls $BKPT > /dev/null); then #ensures the backup point exists
     pause
   fi
   checkplugged
-  #!!!:  THIS MIGHT BE A HUGE VULNERABILITY
-  getpasswd
   sudo rm -rf ~/.dsscripts/backup.sh/TMP/*
   echo " " #newline
   echo "Beginning to copy files, this will take a while"
@@ -156,7 +141,7 @@ if (ls $BKPT > /dev/null); then #ensures the backup point exists
   echo "Files copied, it is now safe to unplug the phone."
   TODAY=`date '+%Y-%m-%d'`;
   sleep $DELAY
-  printf '%s' $DMGPASSPHRASE | hdiutil create -encryption -stdinpass -volname $TODAY -srcfolder ~/.dsscripts/backup.sh/TMP/* ~/.dsscripts/backup.sh/TMP/$TODAY.dmg #passes the passphrase as a dmg password
+  hdiutil create -encryption -stdinpass -volname $TODAY -srcfolder ~/.dsscripts/backup.sh/TMP/* ~/.dsscripts/backup.sh/TMP/$TODAY.dmg #passes the passphrase as a dmg password
   sudo touch $BKPT/$TODAY.dmg
   sudo mv ~/.dsscripts/backup.sh/TMP/$TODAY.dmg $BKPT/$TODAY.dmg
   echo "Backup finished."
